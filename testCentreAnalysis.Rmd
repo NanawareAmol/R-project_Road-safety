@@ -1,0 +1,65 @@
+---
+title: "Test Centre - pass/fail"
+author: "Amol Nanaware"
+date: "06/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(gridExtra)
+library(scales)
+install.packages("ggridges")
+library(ggridges)
+```
+
+
+```{r}
+
+#passfail[is.na(passfail)] <- 0
+
+passfail <- passfail %>% 
+  mutate(totalFails = Fail1 + ifelse(is.na(Fail2), 0, Fail2))
+passfail <- passfail %>% 
+  mutate(Totalpass = Pass1 + ifelse(is.na(Pass2), 0, Pass2))
+
+#passfailGroup <- group_by(passfail, Year)
+
+# ggplot(data = passfail, aes(x = c(Totalpass, totalFails) , y = Centre)) +
+#   geom_bar(stat = "identity")
+# 
+# ggplot(data = passfail, aes(x = Location, y = count)) +
+#   geom_bar(stat="identity", fill="steelblue")+
+#   geom_text(aes(label = count), hjust=-0.3, size=3.5)+
+#   theme_minimal() + coord_flip()
+
+```
+
+
+```{r,echo=FALSE}
+
+passfailGroup <- summarise(group_by(passfail, Centre), Pass1 = sum(Pass1), Fail1 = sum(Fail1), Total1 = sum(Total1), Pass2 = sum(Pass2, na.rm = T), Fail2 = sum(Fail2, na.rm = T), Total2 = sum(Total2, na.rm = T), Totalpass = sum(Totalpass), totalFails = sum(totalFails))
+
+passfailGroup <- mutate(passfailGroup, Pass1prop = Pass1/Total1, Pass2prop = Pass2/Total2, totalPassProp = (Totalpass / (Total1 + Total2)), totalFailsProp = (totalFails / (Total1 + Total2)))
+
+```
+
+
+```{r}
+write.csv(passfail, "passFail.csv")
+write.csv(passfailGroup, "passFailGroupByCentre.csv")
+
+```
+
+
+
+
+
+
+
+
