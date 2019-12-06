@@ -1,0 +1,60 @@
+---
+title: "ST661 Project"
+author: "Calum Heraty - 12314471"
+date: "11/29/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gridExtra)
+library(scales)
+library(ggridges)
+load("H:\\ST661\\Project\\passfail.RData")
+```
+
+
+
+```{r,echo=FALSE}
+passfailtotals <- summarise(group_by(passfail,Year),Pass1=sum(Pass1),Fail1=sum(Fail1),Total1=sum(Total1),Pass2=sum(Pass2),Fail2=sum(Fail2),Total2=sum(Total2))
+passfailtotals <- mutate(passfailtotals,Pass1prop=Pass1/Total1,Pass2prop=Pass2/Total2)[c(1,2,3,4,8,5,6,7,9)]
+```
+
+
+```{r,echo=FALSE}
+passfailtotals1 <- passfailtotals[c(1,2,3,4)]
+names(passfailtotals1) <- c("Year","Pass","Fail","Total")
+passfailtotals1$Test <- "First"
+passfailtotals2 <- passfailtotals[c(1,6,7,8)]
+names(passfailtotals2) <- c("Year","Pass","Fail","Total")
+passfailtotals2$Test <- "Retest"
+passfailtotals0 <- rbind(passfailtotals1,passfailtotals2)
+passfailtotals1 <- passfailtotals0[c(1,2,4,5)]
+names(passfailtotals1) <- c("Year","Count","Total","Test")
+passfailtotals1$Result <- "Pass"
+passfailtotals2 <- passfailtotals0[c(1,3,4,5)]
+names(passfailtotals2) <- c("Year","Count","Total","Test")
+passfailtotals2$Result <- "Fail"
+passfailtotals0 <- rbind(passfailtotals1,passfailtotals2)
+passfailtotals0$Result<-factor(passfailtotals0$Result,c("Pass","Fail"))
+passfailtotals0$Test<-factor(passfailtotals0$Test,c("First","Retest"))
+```
+
+## Total Passes/Fails per Year
+
+```{r,echo=FALSE, warning=FALSE}
+ggplot(passfailtotals0,aes(x=Year,y=Count, fill=Result)) + geom_col(position="dodge")+theme(legend.position = "bottom",legend.title = element_blank()) + scale_fill_manual(values = c("lightblue","slategray")) + facet_wrap(~Test)+ scale_y_continuous(labels = comma)
+```
+
+## Total Pass Proportion per Year
+
+```{r,echo=FALSE, warning=FALSE}
+ggplot(passfailtotals0,aes(x=Year,y=Count, fill=factor(Result,levels=c("Fail","Pass")))) + geom_col(position = "fill")+geom_hline(yintercept = 0.5,col="red")+theme(legend.position = "bottom",legend.title = element_blank()) + scale_fill_manual(values = c("slategray","lightblue")) + facet_wrap(~Test)
+```
+
+## Distribution of Pass Proportions per Centre 
+
+```{r,echo=FALSE}
+ggplot(passfail, aes(x=Year,y=Pass1prop,fill=Year)) + geom_violin() + geom_boxplot(width=0.2, color="black", alpha=0.5) + geom_hline(yintercept = 0.5,col="red") + theme_bw() + labs(y="First Test Pass Proportion") + coord_flip() + guides(fill = guide_legend(reverse = TRUE))
+```
