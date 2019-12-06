@@ -1,0 +1,208 @@
+---
+title: "MiniProject"
+author: "Haojun He"
+date: "2019/12/1"
+output: html_document
+---
+
+```{r include = FALSE}
+################## packages ##################
+# install.packages("readxl")
+# install.packages("tidyverse")
+# install.packages("GGally")
+library(readxl)
+library(tidyverse)
+library(GGally)
+```
+
+```{r  echo=FALSE }
+################## raw data ##################
+##setwd("E:/Academic year/R/assignment/week7mini_project/data")
+setwd("H:\\ST661\\Project")
+mmdata<-read_excel("mmAll.xlsx",sheet=1,na="NA")
+```
+
+```{r  ,echo=FALSE}
+################## select top 15 market share make's name  ##################
+# totoal  number of car in each make 
+TotalMumMake <- mmdata %>%
+  group_by(VehicleMake) %>%
+  summarise( MakeTotal=sum(Total, na.rm=T)) 
+#  top 15 make names
+TotalMumMake<-arrange(TotalMumMake,desc(MakeTotal))
+Name15<-TotalMumMake$VehicleMake[1:15]
+```
+
+
+```{r , echo=FALSE}
+################## prepare data for market share plot  ##################
+
+# the number of car of top 15 make in each year
+TotaMumlMakeYear <- mmdata %>%
+  group_by(VehicleMake,reportYear) %>%
+  summarise( MakeTotal=sum(Total, na.rm=T))
+
+# the  number of car in each year
+TotalMumYear<- mmdata %>%
+  group_by(reportYear) %>%
+  summarise( YearTotal=sum(Total, na.rm=T)) 
+
+# left join TotaMumlMakeYear and TotalMumYear
+MarketShare<-left_join(TotaMumlMakeYear,TotalMumYear,by="reportYear")
+
+# calculate market share of each brand in each year
+MarketShare$marketshare<-MarketShare$MakeTotal/MarketShare$YearTotal
+
+# select  market share of top 15 make
+Top15<-filter(MarketShare,VehicleMake %in% c( "TOYOTA",'VOLKSWAGEN' ,'FORD','NISSAN','OPEL',
+                                              'RENAULT','PEUGEOT','BMW','AUDI','MERCEDES BENZ',
+                                              'HYUNDAI','SKODA','HONDA','MAZDA' ,'CITROEN'))
+Top15<-arrange(Top15,desc(marketshare))
+#sort make for plot 
+Top15$VehicleMake <- factor(Top15$VehicleMake, levels=c("TOYOTA",'VOLKSWAGEN' ,'FORD','NISSAN','OPEL','RENAULT','PEUGEOT','BMW','AUDI','MERCEDES BENZ','HYUNDAI','SKODA','HONDA','MAZDA' ,'CITROEN'), ordered=TRUE)
+
+```
+
+```{r Top15,echo=FALSE}
+################## plot of market share for top 15 make   ##################
+ggplot()+
+  geom_point(data=Top15,mapping = aes(x=VehicleMake,y=marketshare,color=reportYear))+
+  geom_line(data=Top15,mapping = aes(x=VehicleMake,y=marketshare,color=reportYear))+labs(x="Vehicle Make",y="Market Share", color="Report Year")+theme_bw()+
+    theme(axis.text.x = element_text(face="bold", color="black", size=8),
+        axis.text.y = element_text(face="bold", color="black", size=8)) + coord_flip()
+
+```
+
+```{r ,echo=FALSE}
+############# data for plot of fail rate and distribution of each car age cut  ###############
+# car age
+mmdata_1<-cbind(mmdata,CarAge=mmdata$reportYear-mmdata$YearOfBirth)
+
+# cut car age 
+mmdata_1$CarAge_cut<-cut(mmdata_1$CarAge,c(-999,4,6,8,10,12,14,16,18,999),labels = c(
+  '[0,4]','(4,6]','(6,8]','(8,10]','(10,12]','(12,14]','(14,16]','(16,18]','(18,+)'))
+
+# summarize number group by CarAge_cut
+TotalMumAge <- mmdata_1 %>%
+  group_by(CarAge) %>%
+  summarise( MakeTotal=sum(Total, na.rm=T),
+             FailTotal=sum(FAIL, na.rm=T) ) 
+
+# calculate fail rate for each age cut
+TotalMumAge$FailRate<-TotalMumAge$FailTotal/TotalMumAge$MakeTotal
+
+# distribution of car age
+TotalMumAge$CarAgePer<-TotalMumAge$MakeTotal/sum(TotalMumAge$MakeTotal)
+```
+
+datamodel<-subset(TotalMumAge,CarAge>=0 & CarAge<=15 )
+
+fit <- lm(FailRate ~ CarAge, data = datamodel)
+summary(fit)
+
+
+plot(datamodel$FailRate ,datamodel$CarAge)
+
+plot(fit)
+
+
+```{r ,echo=FALSE}
+################ plot of fail rate and distribution of each car age group   ################
+cols <- c("Fail Rate" = "red", "Proportion" = "skyblue")
+ggplot(data = TotalMumAge) +
+  geom_point(mapping = aes(x = CarAge_cut, y = FailRate,colour="Fail Rate"))+ 
+  labs(x="Car Age",y="")+
+  geom_bar(aes(CarAge_cut,weight=CarAgePer,fill="Proportion"),colour="black") + theme_bw()+ scale_colour_manual(name = "",values=cols)+scale_fill_manual(name="",values=cols)
+
+```
+
+````{r}
+fit <- lm(FailRate ~ mmdata_1$CarAge, data = TotalMumAge)
+````
+
+```{r ,echo=FALSE}
+################ plot of fail rate for top 15 makes in different age cut  ##################
+
+# summarize number for different makes in different age group
+TotalMumAgeMake <- mmdata_1 %>%
+  group_by(VehicleMake,CarAge_cut) %>%
+  summarise( MakeTotal=sum(Total, na.rm=T),
+             FailTotal=sum(FAIL, na.rm=T))
+
+#  calculate fail rate 
+TotalMumAgeMake$FailRate<-TotalMumAgeMake$FailTotal/TotalMumAgeMake$MakeTotal
+
+# selsect top 15 makes for plot
+TotalMumAgeMake<-filter(TotalMumAgeMake,VehicleMake %in% c( "TOYOTA",'VOLKSWAGEN' ,'FORD','NISSAN','OPEL','RENAULT','PEUGEOT','BMW','AUDI','MERCEDES BENZ',
+'HYUNDAI','SKODA','HONDA','MAZDA' ,'CITROEN'
+))
+
+# calculate 1st Qu., median and 3rd Qu. of  fail rate 
+MakeFailRate<-summary(subset(TotalMumAgeMake,TotalMumAgeMake$CarAge_cut=="(10,12]")$FailRate)
+
+# sort makes for plot lables
+TotalMumAgeMake$VehicleMake <- factor(TotalMumAgeMake$VehicleMake, levels=c('HONDA','TOYOTA','MAZDA','NISSAN','MERCEDES BENZ','FORD', 'VOLKSWAGEN','OPEL','SKODA','BMW','AUDI','CITROEN','PEUGEOT','HYUNDAI','RENAULT' ))
+
+```
+
+```{r,echo=FALSE } 
+################ plot of fail ratefor top 15 makes in different age cut  ##################
+ggplot(data = TotalMumAgeMake,mapping = aes(y = FailRate, x=VehicleMake)) +
+  geom_boxplot(fill="lightgoldenrod")+
+  geom_hline(yintercept =c(0.5536,0.5962,0.6139),colour="red")+geom_text(aes(x=-0.2,y=0.5536,label ="LQ",hjust=-0.1, vjust = -0.2), size = 3)+geom_text(aes(x=-0.2,y=0.5962,label ="MED",hjust=-0.1, vjust = -0.2), size = 3)+geom_text(aes(x=-0.2,y=0.6139,label ="UQ",hjust=-0.045, vjust = -0.2), size = 3)+ labs(x="Vehicle Make", y="Fail Rate")+theme_bw()+
+  theme(axis.text.x = element_text(face="bold", color="black", size=5),
+        axis.text.y = element_text(face="bold", color="black", size=5))
+```
+
+```{r,echo=FALSE } 
+################ select quality of top 5 and bottom 5 model ##################
+
+## choose Top 15 brand 
+mmdata_2<-filter(mmdata_1,VehicleMake %in% c( "TOYOTA",'VOLKSWAGEN' ,'FORD','NISSAN','OPEL',  'RENAULT','PEUGEOT','BMW','AUDI','MERCEDES BENZ',
+'HYUNDAI','SKODA','HONDA','MAZDA' ,'CITROEN'
+))
+
+# compare the fail rate of different model in  in same age cut((10,12])
+goodMakeModel <- subset(mmdata_2,CarAge_cut=="(10,12]") %>%
+  group_by(VehicleMake,VehicleModel) %>%
+  summarise( MakeModelTotal=sum(Total, na.rm=T),
+             FailTotal=sum(FAIL, na.rm=T))
+
+#calculate distribution of model 
+goodMakeModel$MakeModelPercent<-goodMakeModel$MakeModelTotal/sum(goodMakeModel$MakeModelTotal)
+
+# calculate fial rate of model 
+goodMakeModel$MakeModelFialRate<-goodMakeModel$FailTotal/goodMakeModel$MakeModelTotal
+
+# sort percentage of model
+goodMakeModel<-arrange(goodMakeModel,desc(MakeModelPercent))
+
+# choose popular model as the range of analysis (the number of these models shoold occupy at lease 80% of total)
+# sum(goodMakeModel[1:40,]$MakeModelPercent)
+
+
+# choose top 50 model as range of analysis (the number of these models is at least 85% of total)
+#sum(goodMakeModel[1:50,]$MakeModelPercent)
+Top5Model<-arrange(goodMakeModel[1:50,],goodMakeModel[1:50,]$MakeModelFialRate)
+
+# choose quality top 5 and bottom 5  model for plot
+BestWorst5Model<-Top5Model[c(1:5,46:50),]
+BestWorst5Model$MakeModel<-paste(BestWorst5Model$VehicleMake,BestWorst5Model$VehicleModel,sep = "-")
+
+# sort model for plot
+BestWorst5Model$MakeModel<- factor(BestWorst5Model$MakeModel, levels=c("TOYOTA-YARIS",
+"TOYOTA-RAV 4","TOYOTA-COROLLA","HONDA-CIVIC","FORD-FIESTA", "RENAULT-SCENIC",             
+"RENAULT-MEGANE","FORD-GALAXY","RENAULT-LAGUNA","HYUNDAI-TRAJET" 
+))
+```
+
+```{r,echo=FALSE}
+ggplot() +
+  geom_bar(data = BestWorst5Model,aes(MakeModel,weight=MakeModelFialRate),colour="blue",fill="blue")+
+    theme(axis.text.x = element_text(face="bold", color="black", size=5),
+        axis.text.y = element_text(face="bold", color="black", size=5))
+
+```
+
+
+
