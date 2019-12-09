@@ -11,32 +11,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r, warning=FALSE, echo=FALSE}
+packages <- c("plotly", "tidyverse")
+
+newPackages <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(newPackages)) install.packages(newPackages)
+
 library(tidyverse)
-library(gridExtra)
-library(scales)
-install.packages("ggridges")
-library(ggridges)
+library(plotly)
+
 ```
 
 
 ```{r}
-
-#passfail[is.na(passfail)] <- 0
-
+load("passfail.RData")
 passfail <- passfail %>% 
   mutate(totalFails = Fail1 + ifelse(is.na(Fail2), 0, Fail2))
 passfail <- passfail %>% 
   mutate(Totalpass = Pass1 + ifelse(is.na(Pass2), 0, Pass2))
-
-#passfailGroup <- group_by(passfail, Year)
-
-# ggplot(data = passfail, aes(x = c(Totalpass, totalFails) , y = Centre)) +
-#   geom_bar(stat = "identity")
-# 
-# ggplot(data = passfail, aes(x = Location, y = count)) +
-#   geom_bar(stat="identity", fill="steelblue")+
-#   geom_text(aes(label = count), hjust=-0.3, size=3.5)+
-#   theme_minimal() + coord_flip()
 
 ```
 
@@ -51,10 +42,55 @@ passfailGroup <- mutate(passfailGroup, Pass1prop = Pass1/Total1, Pass2prop = Pas
 
 
 ```{r}
-write.csv(passfail, "passFail.csv")
-write.csv(passfailGroup, "passFailGroupByCentre.csv")
+passfailGroup$totalPassProp = round((passfailGroup$totalPassProp * 100), digits = 2)
+passfailGroup$totalFailsProp = round((passfailGroup$totalFailsProp * 100), digits = 2)
+
+passFailGroup1 <- passfailGroup[c(1, 8)]
+passFailGroup1$Test <- "Pass"
+names(passFailGroup1) <- c("Centre", "Count", "Test")
+passFailGroup2 <- passfailGroup[c(1, 9)]
+passFailGroup2$Test <- "Fail"
+names(passFailGroup2) <- c("Centre", "Count", "Test")
+passFailcount <- rbind(passFailGroup1, passFailGroup2)
+
+p <- plot_ly(passfailGroup, x = ~passfailGroup$Centre, y = ~passfailGroup$Totalpass, type = 'bar', name = 'Pass', text = paste("Total tests = ", (passfailGroup$Totalpass+passfailGroup$totalFails), "<br>Passed =", passfailGroup$totalPassProp,"%", "<br>Failed =", passfailGroup$totalFailsProp,"%"), opacity = 0.5, marker = list(color = '#3AC3E3', line = list(color = '#0D6EB0', width = 1))) %>%
+  add_trace(y = ~passfailGroup$totalFails, name = 'Fails', opacity = 0.5,
+            marker = list(color = '#0E84FF', line = list(color = '#0D6EB0', width = 1))) %>%
+  layout(yaxis = list(title = 'Count'), xaxis = list(title = 'Test Centres'), barmode = 'stack')
+p
+
 
 ```
+
+
+```{r}
+#scatter plot for centre total pass per year
+ggplot(data = passfail, aes(x = fct_reorder(Centre, -Totalpass), y = Totalpass, color = Year,  size = Totalpass)) + geom_point(alpha = 0.5) + 
+  theme(axis.text.x = element_text(size=9, angle=-90, hjust = 0, vjust = 0.5), axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"),
+  panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "lightblue")) + 
+  labs(x = "Test Centres", y = "Totol pass count")
+```
+
+```{r}
+passfail$totPassPercentage <- round((passfail$Totalpass / (passfail$Totalpass + passfail$totalFails)) * 100, digits = 2)
+
+passfail$totFailPercentage <- round((passfail$totalFails / (passfail$Totalpass + passfail$totalFails)) * 100, digits = 2)
+
+#scatter plot for centre pass percetage per year
+ggplot(data = passfail, aes(x = fct_reorder(Centre, -totPassPercentage), y = totPassPercentage, color = Year,  size = totPassPercentage)) + geom_point(alpha = 0.5) + 
+  theme(axis.text.x = element_text(size=9, angle=-90, hjust = 0, vjust = 0.5), axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"),
+  panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "lightblue")) + 
+  labs(title = "Test centre pass% per year", x = "Test Centres", y = "Total Pass %")
+```
+
+```{r}
+p <- plot_ly(passfail, x = passfail$Year, y = passfail$Totalpass, color = ~passfail$Year, type = "box") %>%
+  layout(title = "Yearly performance", yaxis = list(title = 'Total Pass Count'), xaxis = list(title = 'Year'))
+p
+```
+
+
+
 
 
 
