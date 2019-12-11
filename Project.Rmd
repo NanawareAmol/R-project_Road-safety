@@ -1,31 +1,49 @@
 ---
-title: "ST661 Project"
-author: "Calum Heraty - 12314471"
-date: "11/29/2019"
-output: html_document
+always_allow_html: true
+output:
+  html_document: default
 ---
+
+<style type="text/css">
+  body{ /* Normal  */
+      font-size: 12px;
+  }
+.column-left{
+  float: left;
+  width: 40%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 60%;
+  text-align: right;
+}
+</style>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+packages <- c("plotly", "tidyverse", "ggmap", "GGally", "gridExtra", "scales", "viridis")
+newPackages <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(newPackages)) install.packages(newPackages)
 library(tidyverse)
+library(plotly)
 library(gridExtra)
 library(scales)
-library(packcircles)
 library(GGally)
-library(hrbrthemes)
-library(plotly)
-load("H:\\ST661\\Project\\passfail.RData")
-```
+library(viridis)
+library(ggmap)
 
+setwd("h:\\R-project_Road-safety-master\\R-project_Road-safety-master\\Calum_Project\\Calum_Project")
+load("passfail.RData")
+load("nct_geom.RData")
+register_google("AIzaSyAFZW4nXia-NXrrMWvOb9-Voa2sparpBhc")
+```
 
 
 ```{r,echo=FALSE}
 passfailtotals <- summarise(group_by(passfail,Year),Pass1=sum(Pass1),Fail1=sum(Fail1),Total1=sum(Total1),Pass2=sum(Pass2),Fail2=sum(Fail2),Total2=sum(Total2))
 passfailtotals <- mutate(passfailtotals,Pass1prop=Pass1/Total1,Pass2prop=Pass2/Total2)[c(1,2,3,4,8,5,6,7,9)]
-```
-
-
-```{r,echo=FALSE}
 passfailtotals1 <- passfailtotals[c(1,2,3,4)]
 names(passfailtotals1) <- c("Year","Pass","Fail","Total")
 passfailtotals1$Test <- "First"
@@ -42,47 +60,48 @@ passfailtotals2$Result <- "Fail"
 passfailtotals0 <- rbind(passfailtotals1,passfailtotals2)
 passfailtotals0$Result<-factor(passfailtotals0$Result,c("Pass","Fail"))
 passfailtotals0$Test<-factor(passfailtotals0$Test,c("First","Retest"))
-passfailtotals0
+```
+## Project Title {.tabset}
+### Calum 
+
+Let us begin with an overview of the data. The NCT is a test that all cars over 4 years of age must undergo to legally drive on roads in Ireland. We have NCT pass and fail data for 11668698 cars from 2013 to 2018. This data was recorded from all 47 test centres scattered across Ireland. This includes both initial test and retest data. Please note retest data was not available for 2014, hence it was omitted from our report. Here's an overview of how this data is distributed.
+
+```{r,echo=FALSE, warning=FALSE,fig.width=9, fig.height=2.5}
+p1 <- ggplot(passfailtotals0,aes(x=Year,y=Count, fill=Result)) + geom_col(position="dodge")+theme_bw()+theme(legend.position = "none",legend.title = element_blank()) + scale_fill_manual(values = c("lightblue","slategray")) + facet_wrap(~Test)+ scale_y_continuous(labels = comma) 
+p2 <- ggplot(passfailtotals0,aes(x=Year,y=Count, fill=Result)) + geom_col(position="fill") + labs(y="Proportion") +geom_hline(yintercept = 0.5,col="red") + theme_bw()+theme(legend.key = element_rect(colour="black"), legend.position = c(0.912,0.85),legend.title = element_blank(), legend.background = element_rect(fill="transparent"), legend.text = element_text(size = 8)) + scale_fill_manual(values = c("lightblue","slategray")) + facet_wrap(~Test)
+grid.arrange(p1, p2, ncol=2 )
 ```
 
-## Total Passes/Fails per Year
+As you can see the majority fail the first test, however the margins are quite close. As to be expected, the retest has a low fail rate.It is interesting to note that both total number of cars tested and pass proportion per year hasn't fluctuated much. One might expect that as the population increases, so too must the number of cars. One possible explanation for the lack of growth is that more people may be switching to public transport. We would also expect as technology advances cars should become more reliable, yet our data does not support this theory. Perhaps the NCT have included stricter requirements that would balance this increase.  
 
-```{r,echo=FALSE, warning=FALSE,fig.width=5}
-ggplot(passfailtotals0,aes(x=Year,y=Count, fill=Result)) + geom_col(position="dodge")+theme_bw()+theme(legend.position = "bottom",legend.title = element_blank()) + scale_fill_manual(values = c("lightblue","slategray")) + facet_wrap(~Test)+ scale_y_continuous(labels = comma) 
-```
+<div class = "column-left">
 
-## Total Pass Proportion per Year
+<br><br><br>
 
-```{r,echo=FALSE, warning=FALSE}
-ggplot(passfailtotals0,aes(x=Year,y=Count, fill=factor(Result,levels=c("Fail","Pass")))) + geom_col()+geom_hline(yintercept = 0.5,col="red") + theme_bw()+theme(legend.position = "bottom",legend.title = element_blank()) + scale_fill_manual(values = c("slategray","lightblue")) + facet_wrap(~Test)
-```
+**Which test centre should I go to?**  
 
-## Distribution of Pass Proportions per Centre 
+To the right we've ranked different centres by their first test pass proportions. Using an exponentially weighted mean we prioritized more recent results in our calculation. The top shows centres with relatively high pass rates and the bottom shows the centres with the lowest. Notice how consistent the scores are. This could be dues to higher quality vehicles in more affluent areas or it could indicate a bias in the testing centres. Our recomendations are if you live in Monaghan, take a weekend trip to Kilkenny for your car test, you may end up saving money.
 
-```{r,echo=FALSE, fig.width=5}
-ggplot(passfail, aes(x=Year,y=Pass1prop,fill=Year)) + geom_violin() + geom_boxplot(width=0.2, color="black", alpha=0.5) + geom_hline(yintercept = 0.5,col="red") + theme_bw() + labs(y="First Test Pass Proportion") + coord_flip() + guides(fill = guide_legend(reverse = TRUE))
-```
+<br><br><br><br><br>
 
+**Is location a factor?**
 
-```{r,echo=FALSE}
-passfail2018 <- filter(passfail,Year=="2018")
-packing <- circleProgressiveLayout(passfail2018$Total1,sizetype='area')
-passfail2018 <- cbind(passfail2018, packing)
-dat.gg <- circleLayoutVertices(packing, npoints=50)
-p <- ggplot() + geom_polygon(data = dat.gg, aes(x, y, group = id, fill=as.factor(id)), colour = "black", alpha = 0.6)+geom_text(data = passfail2018, aes(x, y, size=Total1, label = Centre))+scale_size_continuous(range = c(1,4)) +theme_void() +theme(legend.position="none") + coord_equal()
-ggplotly(p, tooltip = c("Total1", "Centre"))
-```
-
-
-```{r,echo=FALSE}
-p <- ggplot(passfail, aes(y=Pass1prop,x=Total1)) + geom_point(size=1, shape=3) + geom_smooth(method = "lm", se=F) + theme_bw()
-ggplotly(p)
-```
-
-```{r,echo=FALSE}
+To test the above theory we created the map to the right. The colour represents the same scale as above, with size representing the total volume of cars in 2018. There is a large cluster of low ranking centres in north-central and north-west Ireland. This may support our affluency theory. If we look at the Dublin area there are low ranking centres to the north and higher ranking centres to the south. This could be a reflection of the northside - southside distribution of wealth. It is intriguing that Kerry has some of the highest ranked centres, despite being a more rural county. Traffic volume seems less significant there are large centres and small centres at either end of the spectrum.
+</div>
+<div class = "column-right">
+```{r,echo=FALSE, message=FALSE, include=T}
 x <- data.frame(split(passfail$Pass1prop,passfail$Year))
 names(x) <- c("2013","2014","2015","2016","2017","2018")
-x$Centre <- passfail$Centre[1:47]
-p <- ggparcoord(x, columns=1:6, groupColumn = "Centre")+geom_line(size=0.3)+theme_minimal()
-ggplotly(p)
+x <- cbind(x,nct_geom)
+z <- rev(diff(c(0,pexp(1:6,0.5))))
+x$Total2018<- passfail$Total1[passfail$Year=="2018"]
+x <- arrange(x,desc(rowSums(mapply(`*`,select(x,starts_with("2")),z))))
+x$Centre <-factor(x$Centre,levels=x$Centre)
+x$Rank <- 1:47
+p <- ggparcoord(x, columns=1:6, groupColumn = "Centre")+geom_line(size=0.3)+theme_minimal() + scale_color_viridis(discrete = TRUE, direction = -1, option="C") + labs(x="",y="")
+ggplotly(p, width = 550, height = 300, tooltip = c("Centre",".ID"))
+Ire_map <- get_googlemap(center=c(-7.8,53.5), zoom=7,style = 'feature:administrative|element:labels|visibility:off')
+p <- ggmap(Ire_map) + geom_point(data=x, aes(x=lat,y=lon, colour=Centre, size=Total2018)) + scale_radius(range=c(1,3)) + theme_bw()+scale_color_viridis(discrete = TRUE, direction = -1, option="C") + theme(legend.position = "none") + labs(x="", y="")
+ggplotly(p, width = 550, height = 300, tooltip=c("Centre","Total2018"))
 ```
+</div>
