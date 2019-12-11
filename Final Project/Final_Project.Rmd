@@ -1,7 +1,10 @@
 ---
-always_allow_html: true
+always_allow_html: yes
+author: "Amol | Haojun | Japneet | Calum"
 output:
   html_document: default
+  pdf_document: default
+pagetitle: Road Safety
 ---
 
 <style type="text/css">
@@ -233,17 +236,17 @@ p
 <hr style = "margin: 10px 0px 10px;">
 <div style = "display: inline-block;float: left;width: 55%;">
 #### <b>Total test passed for each test centre</b>
-The following scatter plot show the total test pass count for each test centre from the year 2013 till year 2018 excluding 2014 due to incomplete data. The questions that can be answered by this graph are, <br/>
+The following scatter plot shows the total test pass count for each test centre from the year 2013 till year 2018. The questions that can be answered by this graph are, <br/>
 1. which are the top 3 and last 3 centres based on total pass count?<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>(Deansgrade, Northpoint 2, Fonthill and Cahirciveen, Clifden, derrybeg resp.)</b><br/>
 2. Which year has the highest and lowest total pass count?<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>2015 and 2013 respectively</b><br/>
 But, in this graph we are not considering the total tests performed by the test centres which shows the actual performance of the tests. For this we will plot another graph.
 </div>
-<div style = "display: inline-block;width: 45%;padding-left: 15px;margin-bottom: 80px;">
+<div style = "display: inline-block;width: 45%;padding-left: 15px;margin-bottom: 30px;">
 #### <b>Test performance for each test centre</b>
 The graph gives the overall idea of the test performance based on pass rate and the year.
-As per the graph we can say that for year 2013, 2015, 2016, 2017 and 2018, the pass rate is higher that 55%. And the highest and lowest performance found in Kilkenny and Monaghan test centres respectively.
+As per the graph we can say that for year 2013, 2015, 2016, 2017 and 2018, the pass rate is higher that 55%. And the highest and lowest performance found in Kilkenny and Monaghan test centres respectively. The case with the 2014 being less in number is because of the incomplete data available from the NCT website and it can be processed in the same manner if we have the complete set.
 </div>
 
 ```{r,echo=FALSE,include=F, fig.width=8.5,fig.height=3}
@@ -251,19 +254,19 @@ As per the graph we can say that for year 2013, 2015, 2016, 2017 and 2018, the p
 passfail1 <- passfail
 passfail1$Centre <- fct_reorder(passfail1$Centre, -passfail1$Totalpass)
 passfail1$TotalPass1 <- passfail1$Totalpass
-p1 <- ggplotly(ggplot(data = filter(passfail1,Year != '2014'), aes(x = Centre, y = Totalpass, color = Year,  size = TotalPass1)) + geom_point(alpha = 0.5) + 
+p1 <- ggplotly(ggplot(data = passfail1, aes(x = Centre, y = Totalpass, color = Year,  size = TotalPass1)) + geom_point(alpha = 0.5) + 
   theme(axis.text.x = element_text(size=6, angle=-90, hjust = 0, vjust = 0.5), legend.position = "none", axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"), panel.grid.major.y = element_line()) + 
   labs(x = "Test Centres", y = "Totol pass count"), tooltip = c("Centre","Year", "Totalpass")) %>% layout(yaxis = list(gridcolor = toRGB("lightblue")), font = t)
 
 ```
-<!--<img src = "1.jpg" style = "margin-left: 60px;"><img src = "1.jpg">-->
+<img src = "3.jpg" style = "margin-left: 60px;margin-bottom: -10px;">
 ```{r,echo=FALSE, fig.width=9,fig.height=3}
 passfail1$totPassPercentage <- round((passfail1$Totalpass / (passfail1$Totalpass + passfail1$totalFails)) * 100, digits = 2)
 passfail1$totFailPercentage <- round((passfail1$totalFails / (passfail1$Totalpass + passfail1$totalFails)) * 100, digits = 2)
 passfail1$totPassPercentage1 <- round((passfail1$Totalpass / (passfail1$Totalpass + passfail1$totalFails)) * 100, digits = 2)
 passfail1$Centre <- fct_reorder(passfail1$Centre, -passfail1$totPassPercentage)
 #scatter plot for centre pass percetage per year
-p2 <- ggplotly(ggplot(data = filter(passfail1,Year != '2014'), aes(x = Centre, y = totPassPercentage, color = Year,  size = totPassPercentage1)) + geom_point(alpha = 0.5) + 
+p2 <- ggplotly(ggplot(data = passfail1, aes(x = Centre, y = totPassPercentage, color = Year,  size = totPassPercentage1)) + geom_point(alpha = 0.5) + 
   theme(axis.text.x = element_text(size=6, angle=-90, hjust = 0, vjust = 0.5), legend.position = "none", axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"),
   panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "lightblue")) + 
   labs(x = "Test Centres", y = "Total Pass %"), tooltip = c("Centre","Year", "totPassPercentage")) %>% layout(yaxis = list(gridcolor = toRGB("lightblue")), font = t) #title = "Test centre pass% per year", 
@@ -283,7 +286,7 @@ p2
 <div style = "float: left;">
 ```{r,echo=FALSE, fig.width=6,fig.height=2.3}
 p <- plot_ly(passfail, x = passfail$Year, y = passfail$Totalpass, color = ~passfail$Year, type = "box", text = paste("Centre = ", passfail$Centre)) %>%
-  layout(title = "Yearly performance", yaxis = list(title = 'Total Pass Count'), xaxis = list(title = 'Year'), font = t, legend = list(x = 0.92, y = 0.98, bgcolor = "transparent"))
+  layout(title = "Yearly performance", yaxis = list(title = 'Total Pass Count'), xaxis = list(title = 'Year'), font = t, legend = list(x = 0.92, y = 0.98, bgcolor = "transparent"), showlegend = FALSE)
 p
 ```
 </div>

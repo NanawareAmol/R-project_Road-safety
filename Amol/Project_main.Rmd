@@ -35,11 +35,7 @@ library(scales)
 library(GGally)
 library(viridis)
 library(ggmap)
-
-setwd("h:\\R-project_Road-safety-master\\R-project_Road-safety-master\\Calum_Project\\Calum_Project")
 load("passfail.RData")
-load("nct_geom.RData")
-register_google("AIzaSyAFZW4nXia-NXrrMWvOb9-Voa2sparpBhc")
 ```
 
 
@@ -90,7 +86,7 @@ The following scatter plot show the total test pass count for each test centre f
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>2015 and 2014 respectively</b><br/>
 But, in this graph we are not considering the total tests performed by the test centres which shows the actual performance of the tests. For this we will plot another graph.
 </div>
-<div style = "display: inline-block;width: 50%;padding-left: 15px;margin-bottom: 80px;">
+<div style = "display: inline-block;width: 50%;padding-left: 15px;margin-bottom: 90px;">
 #### <b>Test performance for each test centre</b>
 The graph gives the overall idea of the test performance based on pass rate and the year.
 As per the graph we can say that for year 2013, 2015, 2016, 2017 and 2018, the pass rate is higher that 55%. And the highest and lowest performance found in Kilkenny and Monaghan test centres respectively.
@@ -106,7 +102,7 @@ p1 <- ggplotly(ggplot(data = passfail1, aes(x = Centre, y = Totalpass, color = Y
   labs(x = "Test Centres", y = "Totol pass count"), tooltip = c("Centre","Year", "Totalpass")) %>% layout(yaxis = list(gridcolor = toRGB("lightblue")), font = t)
 
 ```
-<img src = "1.jpg" style = "margin-left: 60px;"><img src = "1.jpg">
+<img src = "Result//3.jpg" style = "margin-left: 60px;margin-bottom: -18px;">
 ```{r,echo=FALSE, fig.width=10,fig.height=3}
 passfail1$totPassPercentage <- round((passfail1$Totalpass / (passfail1$Totalpass + passfail1$totalFails)) * 100, digits = 2)
 passfail1$totFailPercentage <- round((passfail1$totalFails / (passfail1$Totalpass + passfail1$totalFails)) * 100, digits = 2)
@@ -114,7 +110,7 @@ passfail1$totPassPercentage1 <- round((passfail1$Totalpass / (passfail1$Totalpas
 passfail1$Centre <- fct_reorder(passfail1$Centre, -passfail1$totPassPercentage)
 #scatter plot for centre pass percetage per year
 p2 <- ggplotly(ggplot(data = passfail1, aes(x = Centre, y = totPassPercentage, color = Year,  size = totPassPercentage1)) + geom_point(alpha = 0.5) + 
-  theme(axis.text.x = element_text(size=6, angle=-90, hjust = 0, vjust = 0.5), legend.position = "none", axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"),
+  theme(axis.text.x = element_text(size=6, angle=-90, hjust = 0, vjust = 0.5), legend.position = "none", legend.background = element_blank(), axis.ticks.x = element_blank(), panel.background = element_rect(fill = "white", colour = "lightblue"),
   panel.grid.minor = element_line(size = 0.5, linetype = 'solid', colour = "lightblue")) + 
   labs(x = "Test Centres", y = "Total Pass %"), tooltip = c("Centre","Year", "totPassPercentage")) %>% layout(yaxis = list(gridcolor = toRGB("lightblue")), font = t) #title = "Test centre pass% per year", 
 ```
@@ -133,7 +129,7 @@ p2
 <div style = "float: left;">
 ```{r,echo=FALSE, fig.width=6,fig.height=2.5}
 p <- plot_ly(passfail, x = passfail$Year, y = passfail$Totalpass, color = ~passfail$Year, type = "box", text = paste("Centre = ", passfail$Centre)) %>%
-  layout(title = "Yearly performance", yaxis = list(title = 'Total Pass Count'), xaxis = list(title = 'Year'), font = t, legend = list(x = 0.9, y = 0.98))
+  layout(title = "Yearly performance", yaxis = list(title = 'Total Pass Count'), xaxis = list(title = 'Year'), showlegend = FALSE, font = t, legend = list(x = 0.9, y = 0.98))
 p
 ```
 </div>
